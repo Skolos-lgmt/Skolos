@@ -140,16 +140,6 @@
       <input type="number" step="0.01" id="papildomai" />
     </div>
 
-    <div class="field">
-      <label>Tavo tikslas</label>
-      <select id="tikslas">
-        <option value="isiskolines">Tik išlipti iš skolų</option>
-        <option value="ramybe">Ramybė + finansinė pagalvė</option>
-        <option value="investuoti">Vėliau investuoti</option>
-        <option value="verslas">Norėčiau verslo ateityje</option>
-      </select>
-    </div>
-
     <button type="submit">Skaičiuoti</button>
   </form>
 
@@ -173,119 +163,38 @@
       const skolos_suma = valNum('skolos_suma');
       const skolos_mokestis = valNum('skolos_mokestis');
       const papildomai = valNum('papildomai');
-      const tikslas = document.getElementById('tikslas').value;
-
-      if (pajamos <= 0) {
-        alert('Įvesk pajamas.');
-        return;
-      }
 
       const bazines_islaidos = bustas + kasdienes + kitos;
       const viso_islaidos = bazines_islaidos + skolos_mokestis;
       const likutis = pajamos - viso_islaidos;
       const likutis_proc = (likutis / pajamos) * 100;
 
-      // Finansinis tipas
-      let tipas = '';
       let tipasTag = '';
-      if (likutis < 0) {
-        tipas = 'Skęstantis';
-        tipasTag = '<span class="tag red">🔴 Skęstantis</span>';
-      } else if (likutis >= 0 && likutis < pajamos * 0.1) {
-        tipas = 'Ant ribos';
-        tipasTag = '<span class="tag orange">🟠 Ant ribos</span>';
-      } else if (likutis >= pajamos * 0.1 && likutis < pajamos * 0.3) {
-        tipas = 'Stabilus';
-        tipasTag = '<span class="tag yellow">🟡 Stabilus</span>';
-      } else {
-        tipas = 'Augantis';
-        tipasTag = '<span class="tag green">🟢 Augantis</span>';
-      }
+      if (likutis < 0) tipasTag = '<span class="tag red">🔴 Skęstantis</span>';
+      else if (likutis < pajamos * 0.1) tipasTag = '<span class="tag orange">🟠 Ant ribos</span>';
+      else if (likutis < pajamos * 0.3) tipasTag = '<span class="tag yellow">🟡 Stabilus</span>';
+      else tipasTag = '<span class="tag green">🟢 Augantis</span>';
 
-      // Skolų laikas
-      let menesiu_min = null;
-      let menesiu_su_papildomai = null;
+      let menesiu_su_papildomai = skolos_suma / (skolos_mokestis + papildomai || 1);
 
-      if (skolos_suma > 0 && skolos_mokestis > 0) {
-        menesiu_min = skolos_suma / skolos_mokestis;
-      }
-      if (skolos_suma > 0 && (skolos_mokestis + papildomai) > 0) {
-        menesiu_su_papildomai = skolos_suma / (skolos_mokestis + papildomai);
-      }
-
-      function menToText(m) {
-        if (!m || !isFinite(m)) return 'N/A';
-        const mRounded = Math.ceil(m);
-        const years = Math.floor(mRounded / 12);
-        const months = mRounded % 12;
-        let t = '';
-        if (years > 0) t += years + ' m. ';
-        if (months > 0) t += months + ' mėn.';
-        if (t === '') t = 'mažiau nei 1 mėn.';
-        return t;
-      }
-
-      // Planų tekstai
-      let planA = '';
-      let planB = '';
-      let planC = '';
-
-      if (skolos_suma <= 0) {
-        planA = 'Nepateikta skolų suma – be to sistema negali sudaryti skolų išlipimo plano.';
-      } else {
-        planA = '🅰 Greitas gelbėjimo planas: maksimaliai nukerpi visas nebūtinas išlaidas (prenumeratos, impulsyvūs pirkimai) ir VISĄ nurodytą papildomą sumą skiri skoloms. Tai leidžia išlipti greičiausiai.';
-        planB = '🅱 Lėtas, bet ramus planas: dalį papildomos sumos skiri skoloms, dalį pasilieki – išlipi lėčiau, bet psichologiškai lengviau, nereikia taip smarkiai veržtis.';
-        planC = '🅲 Agresyvus išlaisvinimas: 6–12 mėn. laikotarpiui gyveni labai taupiai, maksimaliai dedi į skolas. Tikslas – kuo greičiau po to pradėti kaupti finansinę pagalvę ir investuoti.';
-      }
-
-      const rezultatai = [];
-
-      rezultatai.push('<h3>Tavo situacijos suvestinė</h3>');
-      rezultatai.push(`<p><b>Pajamos:</b> ${pajamos.toFixed(2)} € / mėn.</p>`);
-      rezultatai.push(`<p><b>Išlaidos be skolų:</b> ${bazines_islaidos.toFixed(2)} € / mėn.</p>`);
-      rezultatai.push(`<p><b>Išlaidos skoloms:</b> ${skolos_mokestis.toFixed(2)} € / mėn.</p>`);
-      rezultatai.push(`<p><b>Likutis po visko:</b> ${likutis.toFixed(2)} € (${likutis_proc.toFixed(1)} % pajamų)</p>`);
-
-      rezultatai.push('<h3>Finansinis tipas</h3>');
-      rezultatai.push(`<p><b>Tipas:</b> ${tipas} ${tipasTag}</p>`);
-
-      if (skolos_suma > 0) {
-        rezultatai.push('<h3>Skolų išlipimo prognozė</h3>');
-        rezultatai.push(`<p><b>Bendra skolų suma:</b> ${skolos_suma.toFixed(2)} €</p>`);
-        if (menesiu_min) {
-          rezultatai.push(`<p>Su dabartinėmis įmokomis skolose sėdėsi maždaug: <b>${menToText(menesiu_min)}</b></p>`);
-        } else {
-          rezultatai.push('<p>Neįmanoma paskaičiuoti – trūksta mėnesio įmokų sumos.</p>');
-        }
-        if (menesiu_su_papildomai && papildomai > 0) {
-          rezultatai.push(`<p>Jei nuo rytojaus skoloms skirtum papildomai <b>${papildomai.toFixed(2)} €</b> per mėn., išliptum per maždaug: <b>${menToText(menesiu_su_papildomai)}</b></p>`);
-        }
-      }
-
-      rezultatai.push('<h3>Rekomenduojami planai</h3>');
-      rezultatai.push(`<p>${planA}</p>`);
-      if (planB) rezultatai.push(`<p>${planB}</p>`);
-      if (planC) rezultatai.push(`<p>${planC}</p>`);
-
-      // Specialus pasiūlymas – mokamas planas
-      const email = 'TAVO.EL.PASTAS@PASTAS.LT'; // ČIA ĮRAŠYK SAVO EL. PAŠTĄ
-      let bodyText =
+      const email = 'lefaan@gmail.com';
+      const bodyText =
         'Sveiki,%0D%0A%0D%0ANoriu užsisakyti pilną 6–12 mėn. skolų išsilaisvinimo planą.%0D%0A%0D%0ATrumpai apie mane:%0D%0A(Pajamos, skolos, situacija...)';
+
       const mailLink = `mailto:${email}?subject=Noriu%20pilno%20skol%C5%B3%20plano&body=${bodyText}`;
 
-      const offerHtml = [];
-      offerHtml.push('<div class="offer">');
-      offerHtml.push('<h3>Norėtum konkretaus 6–12 mėn. išsilaisvinimo plano?</h3>');
-      offerHtml.push('<p>Jei nori, kad pagal tavo situaciją būtų sudarytas asmeninis planas (kur, kiek ir kokia seka mokėti, nuo ko pradėti ir kaip po skolų pradėti kaupti pagalvę), gali užsisakyti:</p>');
-      offerHtml.push('<p><b>Pilnas asmeninis 6–12 mėn. planas – 4,99 €</b></p>');
-      offerHtml.push(`<a class="pay-btn" href="${mailLink}">Užsakyti pilną planą el. paštu</a>`);
-      offerHtml.push('<p class="small-note">Paspaudus mygtuką, atsidarys el. pašto langas – parašyk trumpai savo situaciją, o atsakymu gausi tolimesnius žingsnius ir apmokėjimo informaciją.</p>');
-      offerHtml.push('</div>');
+      document.getElementById('result').innerHTML = `
+        <p><b>Likutis po visko:</b> ${likutis.toFixed(2)} € (${likutis_proc.toFixed(1)}%)</p>
+        <p><b>Tavo tipas:</b> ${tipasTag}</p>
+        <p><b>Jei papildomai mokėtum:</b> išliptum per ~${Math.ceil(menesiu_su_papildomai)} mėn.</p>
 
-      const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = rezultatai.join('') + offerHtml.join('');
-      resultDiv.style.display = 'block';
-      resultDiv.scrollIntoView({ behavior: 'smooth' });
+        <div class="offer">
+          <h3>Pilnas 6–12 mėn. asmeninis skolų planas – 4,99 €</h3>
+          <a class="pay-btn" href="${mailLink}">Užsakyti planą el. paštu</a>
+          <p class="small-note">Atsakymu gausi apmokėjimo informaciją ir tolimesnius žingsnius.</p>
+        </div>
+      `;
+      document.getElementById('result').style.display = 'block';
     });
   </script>
 </body>
