@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <title>Skolų išgelbėtojas + Finansinis tipas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .field {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 13px;
+      margin-left: 6px;
+    }
+    .red { background: #ffe5e5; color: #b30000; }
+    .orange { background: #fff1d6; color: #b36b00; }
+    .yellow { background: #fffdd0; color: #8a8a00; }
+    .green { background: #e4ffe4; color: #006600; }
+  </style>
+</head>
+<body>
+  <h1>Skolų išgelbėtojas</h1>
+  <h2>+ finansinis tipas (Tinderis)</h2>
+
+  <form id="calcForm">
+    <div class="field">
+      <label>Mėnesio pajamos į rankas (€)</label>
+      <input type="number" step="0.01" id="pajamos" required />
+    </div>
+
+    <div class="field">
+      <label>Būsto išlaidos per mėn. (€)</label>
+      <input type="number" step="0.01" id="bustas" />
+    </div>
+
+    <div class="field">
+      <label>Kasdienės išlaidos (maistas, kuras, vaikai...) (€)</label>
+      <input type="number" step="0.01" id="kasdienes" />
+    </div>
+
+    <div class="field">
+      <label>Kitos fiksuotos išlaidos (telefonas, internetas, prenumeratos...) (€)</label>
+      <input type="number" step="0.01" id="kitos" />
+    </div>
+
+    <div class="field">
+      <label>Bendra visų skolų suma (€)</label>
+      <input type="number" step="0.01" id="skolos_suma" />
+    </div>
+
+    <div class="field">
+      <label>Bendra mėnesio įmokų suma už visas skolas (€)</label>
+      <input type="number" step="0.01" id="skolos_mokestis" />
+    </div>
+
+    <div class="field">
+      <label>Kiek papildomai teoriškai galėtum skirti skoloms per mėn. (€)</label>
+      <input type="number" step="0.01" id="papildomai" />
+    </div>
+
+    <div class="field">
+      <label>Tavo tikslas</label>
+      <select id="tikslas">
+        <option value="isiskolines">Tik išlipti iš skolų</option>
+        <option value="ramybe">Ramybė + finansinė pagalvė</option>
+        <option value="investuoti">Vėliau investuoti</option>
+        <option value="verslas">Norėčiau verslo ateityje</option>
+      </select>
+    </div>
+
+    <button type="submit">Skaičiuoti</button>
+  </form>
+
+  <div id="result" class="result" style="display:none;"></div>
+
+  <script>
+    function valNum(id) {
+      const v = parseFloat(document.getElementById(id).value.replace(',', '.'));
+      return isNaN(v) ? 0 : v;
+    }
+
+    document.getElementById('calcForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const pajamos = valNum('pajamos');
+      const bustas = valNum('bustas');
+      const kasdienes = valNum('kasdienes');
+      const kitos = valNum('kitos');
+      const skolos_suma = valNum('skolos_suma');
+      const skolos_mokestis = valNum('skolos_mokestis');
+      const papildomai = valNum('papildomai');
+      const tikslas = document.getElementById('tikslas').value;
+
+      if (pajamos <= 0) {
+        alert('Įvesk pajamas.');
+        return;
+      }
+
+      const bazines_islaidos = bustas + kasdienes + kitos;
+      const viso_islaidos = bazines_islaidos + skolos_mokestis;
+      const likutis = pajamos - viso_islaidos;
+      const likutis_proc = (likutis / pajamos) * 100;
+
+      // Finansinis tipas
+      let tipas = '';
+      let tipasTag = '';
+      if (likutis < 0) {
+        tipas = 'Skęstantis';
+        tipasTag = '<span class="tag red">🔴 Skęstantis</span>';
+      } else if (likutis >= 0 && likutis < pajamos * 0.1) {
+        tipas = 'Ant ribos';
+        tipasTag = '<span class="tag orange">🟠 Ant ribos</span>';
+      } else if (likutis >= pajamos * 0.1 && likutis < pajamos * 0.3) {
+        tipas = 'Stabilus';
+        tipasTag = '<span class="tag yellow">🟡 Stabilus</span>';
+      } else {
+        tipas = 'Augantis';
+        tipasTag = '<span class="tag green">🟢 Augantis</span>';
+      }
+
+      // Skolų laikas
+      let menesiu_min = null;
+      let menesiu_su_papildomai = null;
+
+      if (skolos_suma > 0 && skolos_mokestis > 0) {
+        menesiu_min = skolos_suma / skolos_mokestis;
+      }
+      if (skolos_suma > 0 && (skolos_mokestis + papildomai) > 0) {
+        menesiu_su_papildomai = skolos_suma / (skolos_mokestis + papildomai);
+      }
+
+      function menToText(m) {
+        if (!m || !isFinite(m)) return 'N/A';
+        const mRounded = Math.ceil(m);
+        const years = Math.floor(mRounded / 12);
+        const months = mRounded % 12;
+        let t = '';
+        if (years > 0) t += years + ' m. ';
+        if (months > 0) t += months + ' mėn.';
+        if (t === '') t = 'mažiau nei 1 mėn.';
+        return t;
+      }
+
+      // Planų tekstai
+      let planA = '';
+      let planB = '';
+      let planC = '';
+
+      if (skolos_suma <= 0) {
+        planA = 'Nepateikta skolų suma – be to sistema negali sudaryti skolų išlipimo plano.';
+      } else {
+        planA = '🅰 Greitas gelbėjimo planas: maksimaliai nukerpi visas nebūtinas išlaidas (prenumeratos, impulsyvūs pirkimai) ir VISĄ nurodytą papildomą sumą skiri skoloms. Tai leidžia išlipti greičiausiai.';
+        planB = '🅱 Lėtas, bet ramus planas: dalį papildomos sumos skiri skoloms, dalį pasilieki – išlipi lėčiau, bet psichologiškai lengviau, nereikia taip smarkiai veržtis.';
+        planC = '🅲 Agresyvus išlaisvinimas: 6–12 mėn. laikotarpiui gyveni labai taupiai, maksimaliai dedi į skolas. Tikslas – kuo greičiau iškart po to pradėti kaupti finansinę pagalvę ir investuoti.';
+      }
+
+      const rezultatai = [];
+
+      rezultatai.push('<h3>Tavo situacijos suvestinė</h3>');
+      rezultatai.push(`<p><b>Pajamos:</b> ${pajamos.toFixed(2)} € / mėn.</p>`);
+      rezultatai.push(`<p><b>Išlaidos be skolų:</b> ${bazines_islaidos.toFixed(2)} € / mėn.</p>`);
+      rezultatai.push(`<p><b>Išlaidos skoloms:</b> ${skolos_mokestis.toFixed(2)} € / mėn.</p>`);
+      rezultatai.push(`<p><b>Likutis po visko:</b> ${likutis.toFixed(2)} € (${likutis_proc.toFixed(1)} % pajamų)</p>`);
+
+      rezultatai.push('<h3>Finansinis tipas</h3>');
+      rezultatai.push(`<p><b>Tipas:</b> ${tipas} ${tipasTag}</p>`);
+
+      if (skolos_suma > 0) {
+        rezultatai.push('<h3>Skolų išlipimo prognozė</h3>');
+        rezultatai.push(`<p><b>Bendra skolų suma:</b> ${skolos_suma.toFixed(2)} €</p>`);
+        if (menesiu_min) {
+          rezultatai.push(`<p>Su dabartinėmis įmokomis skolose sėdėsi maždaug: <b>${menToText(menesiu_min)}</b></p>`);
+        } else {
+          rezultatai.push('<p>Neįmanoma paskaičiuoti – trūksta mėnesio įmokų sumos.</p>');
+        }
+        if (menesiu_su_papildomai && papildomai > 0) {
+          rezultatai.push(`<p>Jei nuo rytojaus skoloms skirtum papildomai <b>${papildomai.toFixed(2)} €</b> per mėn., išliptum per maždaug: <b>${menToText(menesiu_su_papildomai)}</b></p>`);
+        }
+      }
+
+      rezultatai.push('<h3>Rekomenduojami planai</h3>');
+      rezultatai.push(`<p>${planA}</p>`);
+      if (planB) rezultatai.push(`<p>${planB}</p>`);
+      if (planC) rezultatai.push(`<p>${planC}</p>`);
+
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = rezultatai.join('');
+      resultDiv.style.display = 'block';
+      resultDiv.scrollIntoView({ behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>
